@@ -1,0 +1,39 @@
+version: '3'
+services:
+
+  testsql-postrges-server:
+    container_name: testsql-postrges-server
+    image: testsql-postrges-server
+    build:
+      context: docker/
+      dockerfile: postgresql.dockerfile
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/data:/var/tmp/data:ro
+    environment: 
+      - POSTGRES_MULTIPLE_DATABASES=leecampbell
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=mysecretpassword
+      
+      # - CONNECTION_URL=jdbc:postgresql://testsql-postrges-server:5432/postgres?user=postgres&password=mysecretpassword
+
+  flyway-sales:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://testsql-postrges-server:5432/leecampbell -schemas=sales_published -user=postgres -password=mysecretpassword -connectRetries=60 migrate
+    
+    volumes:
+      - ./flyway/sales/sql:/flyway/sql
+      - ./flyway/sales/config:/flyway/config
+    depends_on:
+      - testsql-postrges-server
+
+  flyway-marketing:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://testsql-postrges-server:5432/leecampbell -schemas=marketing_internal -user=postgres -password=mysecretpassword -connectRetries=60 migrate
+    
+    volumes:
+      - ./flyway/marketing/sql:/flyway/sql
+      - ./flyway/marketing/config:/flyway/config
+    depends_on:
+      - flyway-sales
