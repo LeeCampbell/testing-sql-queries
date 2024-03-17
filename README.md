@@ -1,2 +1,3 @@
 # testing-sql-queries
-Example code that demonstrates how to test SQL queries
+Initial code base to create segregated database objects.
+This is the foundational step to demonstrate how to use boundary testing, approval tests and test doubles.
