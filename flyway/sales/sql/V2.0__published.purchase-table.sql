@@ -4,7 +4,7 @@ CREATE TYPE sales_published.purchase_status AS ENUM (
   'Settled', 
   'Cancelled');
 
-CREATE TABLE sales_published.purchases
+CREATE TABLE sales_published.purchase
 (
   purchase_id             BIGSERIAL UNIQUE NOT NULL,
   account_id              INT              NOT NULL,

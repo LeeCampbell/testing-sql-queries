@@ -1,4 +1,4 @@
-INSERT INTO sales_published.purchases(
+INSERT INTO sales_published.purchase(
   account_id,
   created_at,
   amount,

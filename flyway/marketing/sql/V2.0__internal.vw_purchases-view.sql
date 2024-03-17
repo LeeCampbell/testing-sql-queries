@@ -1,4 +1,8 @@
-CREATE VIEW marketing_internal.vw_Purchases 
+CREATE VIEW marketing_internal.vw_Purchase 
 AS
-SELECT Amount, Status, Updated_at 
-FROM sales_published.purchases;
+SELECT 
+    amount, 
+    status, 
+    updated_at 
+FROM 
+    sales_published.purchase;

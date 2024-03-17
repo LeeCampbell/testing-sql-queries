@@ -18,6 +18,16 @@ services:
       
       # - CONNECTION_URL=jdbc:postgresql://testsql-postrges-server:5432/postgres?user=postgres&password=mysecretpassword
 
+  flyway-central:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://testsql-postrges-server:5432/leecampbell -schemas=central_internal -user=postgres -password=mysecretpassword -connectRetries=60 migrate
+    
+    volumes:
+      - ./flyway/central/sql:/flyway/sql
+      - ./flyway/central/config:/flyway/config
+    depends_on:
+      - testsql-postrges-server
+
   flyway-sales:
     image: flyway/flyway
     command: -url=jdbc:postgresql://testsql-postrges-server:5432/leecampbell -schemas=sales_published -user=postgres -password=mysecretpassword -connectRetries=60 migrate
@@ -26,7 +36,7 @@ services:
       - ./flyway/sales/sql:/flyway/sql
       - ./flyway/sales/config:/flyway/config
     depends_on:
-      - testsql-postrges-server
+      - flyway-central
 
   flyway-marketing:
     image: flyway/flyway
