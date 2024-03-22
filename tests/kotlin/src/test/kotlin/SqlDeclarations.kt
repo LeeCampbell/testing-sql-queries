@@ -18,8 +18,11 @@ fun getSimplePgDataSource(): DataSource {
     source.applicationName = "Testing SQL Queries"
     source.user = "postgres"
     source.password = "mysecretpassword"
+    val pgServer: String = System.getenv("PG_SERVER") ?: "localhost"
+    
+    source.setURL("jdbc:postgresql://$pgServer:5432/leecampbell") 
     //source.setURL("jdbc:postgresql://testsql-postrges-server:5432/leecampbell") //if running from within docker compose
-    source.setURL("jdbc:postgresql://localhost:5432/leecampbell")  //if running from local pointing to docker
+    //source.setURL("jdbc:postgresql://localhost:5432/leecampbell")  //if running from local pointing to docker
     return source
 }
 

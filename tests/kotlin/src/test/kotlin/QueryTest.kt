@@ -7,36 +7,39 @@ import java.time.format.DateTimeFormatter
 
 class QueryTest {
     private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+    //Once we are happy with our query, it could be promoted to a view in the `marketing_published` schema.
     private val sql = """
-        WITH cashflows as(
-            SELECT 
-                updated_at,
-                CASE WHEN status = 'Settled' THEN amount END as CashIn,
-                CASE WHEN status = 'Cancelled' THEN amount END as CashOut
-            FROM
-                marketing_internal.vw_Purchase
-            UNION ALL
-            SELECT 
-                updated_at,
-                0 as CashIn,
-                CASE WHEN status IN ('Refunded', 'Returned') THEN amount END as CashOut
-            FROM
-                marketing_internal.vw_Refund
-        )
-        
-        SELECT 
-            month_name_abbreviated || ' ' || year_actual as Month,
-            COALESCE(SUM(CashIn), 0) as CashIn,
-            COALESCE(SUM(CashOut), 0) as CashOut
-        FROM
-            marketing_internal.vw_date d
-            LEFT OUTER JOIN cashflows c
-                ON d.date_actual = c.updated_at::Date
-        WHERE
-           '2000-01-01' <= date_actual AND date_actual < '2000-02-01'
-        GROUP BY
-            Month;
+WITH cashflows as(
+    SELECT
+        updated_at,
+        CASE WHEN status = 'Settled' THEN amount END as CashIn,
+        CASE WHEN status = 'Cancelled' THEN amount END as CashOut
+    FROM
+        marketing_internal.vw_Purchase
+    UNION ALL
+    SELECT
+        updated_at,
+        0 as CashIn,
+        CASE WHEN status IN ('Refunded', 'Returned') THEN amount END as CashOut
+    FROM
+        marketing_internal.vw_Refund
+)
+
+SELECT
+    month_name_abbreviated || ' ' || year_actual as Month,
+    COALESCE(SUM(CashIn), 0) as CashIn,
+    COALESCE(SUM(CashOut), 0) as CashOut
+FROM
+    marketing_internal.vw_date d
+    LEFT OUTER JOIN cashflows c
+        ON d.date_actual = c.updated_at::Date
+WHERE
+   '2000-01-01' <= date_actual AND date_actual < '2000-02-01'
+GROUP BY
+    Month;
     """.trimIndent()
+
 
     @org.junit.jupiter.api.BeforeEach
     fun setUp() {

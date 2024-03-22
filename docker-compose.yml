@@ -47,3 +47,24 @@ services:
       - ./flyway/marketing/config:/flyway/config
     depends_on:
       - flyway-sales
+
+  test:
+    image: gradle 
+    # command: gradle test --no-build-cache --rerun --console=verbose --info    #worked fine, just very noisy
+    # command: gradle test --no-build-cache --rerun --console=plain --info    #worked fine, still verbose
+    command: >
+      bash -c "
+      gradle test --no-build-cache --rerun --info
+      && echo ' ---------------------------------------------------------------' 
+      && echo '    Tests have completed.'
+      && echo '    '
+      && echo '    Press ctrl+c to exit the docker process'
+      && echo ' ---------------------------------------------------------------' "
+    # command: echo 'Press ctrl+c'
+    working_dir: /home/gradle/project
+    environment:
+        - PG_SERVER=testsql-postrges-server
+    volumes:
+      - ./tests/kotlin:/home/gradle/project
+    depends_on:
+      - flyway-marketing
