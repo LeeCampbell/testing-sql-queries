@@ -42,3 +42,11 @@ Once the tests have completed you will be prompted to exit the Docker Compose pr
 |     Press ctrl+c to exit the docker process
 |  ---------------------------------------------------------------
 ```
+
+The initial run of the script will take much longer as it downloads PostgreSQL, Flyway and Gradle Docker images.
+Gradle will then also take another ~3minutes to download the Kotlin/JVM/Gradle dependencies.
+Subsequent test runs are much faster as the files are cached. 
+
+Example of the script running subsequent builds
+
+![Test script output](https://github.com/LeeCampbell/testing-sql-queries/assets/981443/1f0b322a-620a-469b-b3a5-a816597e5aaa)
