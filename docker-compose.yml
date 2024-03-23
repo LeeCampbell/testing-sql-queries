@@ -5,12 +5,10 @@ services:
     container_name: testsql-postrges-server
     image: testsql-postrges-server
     build:
-      context: docker/
+      context: ./docker/
       dockerfile: postgresql.dockerfile
     ports:
       - "5432:5432"
-    volumes:
-      - ./docker/data:/var/tmp/data:ro
     environment: 
       - POSTGRES_MULTIPLE_DATABASES=leecampbell
       - POSTGRES_USER=postgres
@@ -49,22 +47,20 @@ services:
       - flyway-sales
 
   test:
-    image: gradle 
-    # command: gradle test --no-build-cache --rerun --console=verbose --info    #worked fine, just very noisy
-    # command: gradle test --no-build-cache --rerun --console=plain --info    #worked fine, still verbose
+    container_name: testsql-kotlin-tests
+    image: testsql-kotlin-tests
+    build:
+      context: ./tests/kotlin
+      dockerfile: ../../docker/kotlin.dockerfile
     command: >
       bash -c "
-      gradle test --no-build-cache --rerun --info
+      gradle test --rerun --info
       && echo ' ---------------------------------------------------------------' 
       && echo '    Tests have completed.'
       && echo '    '
       && echo '    Press ctrl+c to exit the docker process'
-      && echo ' ---------------------------------------------------------------' "
-    # command: echo 'Press ctrl+c'
-    working_dir: /home/gradle/project
+      && echo ' ---------------------------------------------------------------' "    
     environment:
         - PG_SERVER=testsql-postrges-server
-    volumes:
-      - ./tests/kotlin:/home/gradle/project
     depends_on:
       - flyway-marketing
