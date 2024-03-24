@@ -1,0 +1,2 @@
+month	cashin	cashout
+Jan 2000	648.00	794.00

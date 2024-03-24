@@ -1,4 +1,4 @@
-CREATE VIEW marketing_internal.vw_refund 
+CREATE OR REPLACE VIEW marketing_internal.vw_refund 
 AS
 SELECT 
     amount, 

@@ -1,12 +1,7 @@
 import org.approvaltests.Approvals
 import org.junit.jupiter.api.Test
-import java.io.FileReader
-import java.math.BigDecimal
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class QueryTest {
-    private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     //Once we are happy with our query, it could be promoted to a view in the `marketing_published` schema.
     private val sql = """
@@ -40,9 +35,13 @@ GROUP BY
     Month;
     """.trimIndent()
 
+    private lateinit var database: Database
 
     @org.junit.jupiter.api.BeforeEach
     fun setUp() {
+        val server: String = System.getenv("PG_SERVER") ?: "localhost"
+        database = Database("postgres", "mysecretpassword", server)
+
         //Create test tables
         createTestPurchaseTable()
         createTestRefundTable()
@@ -54,26 +53,27 @@ GROUP BY
 
     @org.junit.jupiter.api.AfterEach
     fun tearDown() {
-        //Replace view to point to real table
-        reinstatePurchaseView()
-        reinstateRefundView()
-
-        //Drop table
+        //Drop test only objects
+        dropPurchaseView()
+        dropRefundView()
         dropTestPurchaseTable()
         dropTestRefundTable()
+
+        //Return schema to production target
+        recreateSchema()
     }
 
     @Test
     fun purchases() {
         populateTestPurchaseTable(getInputFile("purchases").path)
-        val result = executeQueryAsTsvResult(sql)
+        val result = database.executeQueryAsTsvResult(sql)
         Approvals.verify(result)
     }
 
     @Test
     fun refunds() {
         populateTestRefundTable(getInputFile("refunds").path)
-        val result = executeQueryAsTsvResult(sql)
+        val result = database.executeQueryAsTsvResult(sql)
         Approvals.verify(result)
     }
 
@@ -81,13 +81,13 @@ GROUP BY
     fun purchasesAndRefunds() {
         populateTestPurchaseTable(getInputFile("purchases").path)
         populateTestRefundTable(getInputFile("refunds").path)
-        val result = executeQueryAsTsvResult(sql)
+        val result = database.executeQueryAsTsvResult(sql)
         Approvals.verify(result)
     }
 
     @Test
     fun noData() {
-        val result = executeQueryAsTsvResult(sql)
+        val result = database.executeQueryAsTsvResult(sql)
 
         Approvals.verify(result)
     }
@@ -98,12 +98,12 @@ GROUP BY
                 "status         sales_published.purchase_status  NOT NULL, \n" +
                 "updated_at     TIMESTAMP        NOT NULL \n" +
                 ");\n"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
     private fun dropTestPurchaseTable() {
         val sql = "DROP TABLE marketing_internal.purchase;"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
     private fun createTestRefundTable() {
@@ -112,12 +112,12 @@ GROUP BY
                 "status         sales_published.refund_status  NOT NULL, \n" +
                 "updated_at     TIMESTAMP        NOT NULL \n" +
                 ");\n"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
     private fun dropTestRefundTable() {
         val sql = "DROP TABLE marketing_internal.refund;"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
     private fun populateTestPurchaseTable(inputFileName: String) {
@@ -128,7 +128,7 @@ GROUP BY
                     "  updated_at\n" +
                     ")\n" +
                     "VALUES  (?,?::sales_published.purchase_status,?);"
-        insertData(inputFileName, sql)
+        database.insertData(inputFileName, sql)
     }
     private fun populateTestRefundTable(inputFileName: String) {
         val sql = """
@@ -139,31 +139,7 @@ GROUP BY
             )
             VALUES  (?,?::sales_published.refund_status,?);""".trimIndent()
 
-        insertData(inputFileName, sql)
-    }
-
-    private fun insertData(inputFileName: String, sql: String) {
-        val datasource = getSimplePgDataSource()
-        FileReader(inputFileName).use { fileReader ->
-            val reader = tsvReader(fileReader)
-
-            datasource.connection.use { connection ->
-                connection.autoCommit = false
-                val statement = connection.prepareStatement(sql)
-                reader.forEach { row ->
-                    val amount = BigDecimal(row[0])
-                    val status = row[1]
-                    val updatedAt = LocalDateTime.parse(row[2], formatter)
-
-                    statement.setObject(1, amount)
-                    statement.setObject(2, status)
-                    statement.setObject(3, updatedAt)
-                    statement.addBatch()
-                }
-                statement.executeBatch()
-                connection.commit()
-            }
-        }
+        database.insertData(inputFileName, sql)
     }
 
     private fun substitutePurchaseView() {
@@ -171,16 +147,12 @@ GROUP BY
                 "AS\n" +
                 "SELECT amount, status, updated_at \n" +
                 "FROM marketing_internal.purchase;\n"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
-    private fun reinstatePurchaseView() {
-        //OR use Flyway repeatable migration to repair the state back to the correct view.
-        val sql = "CREATE OR REPLACE VIEW marketing_internal.vw_purchase \n" +
-                "AS\n" +
-                "SELECT amount, status, updated_at \n" +
-                "FROM sales_published.purchase;\n"
-        executeSqlCommand(sql)
+    private fun dropPurchaseView() {
+        val sql = "DROP VIEW marketing_internal.vw_purchase;"
+        database.executeSqlCommand(sql)
     }
 
     private fun substituteRefundView() {
@@ -188,16 +160,16 @@ GROUP BY
                 "AS\n" +
                 "SELECT amount, status, updated_at \n" +
                 "FROM marketing_internal.refund;\n"
-        executeSqlCommand(sql)
+        database.executeSqlCommand(sql)
     }
 
-    private fun reinstateRefundView() {
-        //OR use Flyway repeatable migration to repair the state back to the correct view.
-        val sql = "CREATE OR REPLACE VIEW marketing_internal.vw_refund \n" +
-                "AS\n" +
-                "SELECT amount, status, updated_at \n" +
-                "FROM sales_published.refund;\n"
-        executeSqlCommand(sql)
+    private fun dropRefundView() {
+        val sql = "DROP VIEW marketing_internal.vw_refund;"
+        database.executeSqlCommand(sql)
+    }
+
+    private fun recreateSchema() {
+        database.runFlywayMigration()
     }
 }
 
