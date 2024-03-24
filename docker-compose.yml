@@ -54,12 +54,20 @@ services:
       dockerfile: ../../docker/kotlin.dockerfile
     command: >
       bash -c "
-      gradle test --rerun --info
-      && echo ' ---------------------------------------------------------------' 
-      && echo '    Tests have completed.'
-      && echo '    '
-      && echo '    Press ctrl+c to exit the docker process'
-      && echo ' ---------------------------------------------------------------' "    
+      {
+        gradle test --rerun --info &&
+        echo ' ---------------------------------------------------------------' && 
+        echo '    Tests have completed and passed.' && 
+        echo '    ' && 
+        echo '    Press ctrl+c to exit the docker process' && 
+        echo ' ---------------------------------------------------------------'
+      } || {
+        echo ' ---------------------------------------------------------------' && 
+        echo '    Tests have failed.' && 
+        echo '    ' && 
+        echo '    Press ctrl+c to exit the docker process' && 
+        echo ' ---------------------------------------------------------------'
+      } "
     environment:
         - PG_SERVER=testsql-postrges-server
     volumes:
