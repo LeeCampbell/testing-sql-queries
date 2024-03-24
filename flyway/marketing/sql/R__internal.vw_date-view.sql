@@ -1,4 +1,4 @@
-CREATE VIEW marketing_internal.vw_date 
+CREATE OR REPLACE VIEW marketing_internal.vw_date 
 AS
 SELECT 
     date_actual,

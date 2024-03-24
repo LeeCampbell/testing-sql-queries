@@ -62,5 +62,7 @@ services:
       && echo ' ---------------------------------------------------------------' "    
     environment:
         - PG_SERVER=testsql-postrges-server
+    volumes:
+      - ./flyway/marketing/sql:/home/gradle/project/build/classes/kotlin/test/db/migration/
     depends_on:
       - flyway-marketing
